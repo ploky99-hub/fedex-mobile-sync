@@ -12,7 +12,18 @@ npm start
 
 브라우저: http://localhost:3000
 
-## Render 배포
+## Render 배포 (1분)
+
+코드는 GitHub에 올려 두었습니다: https://github.com/ploky99-hub/fedex-mobile-sync
+
+1. 아래 링크로 Render 로그인 후 Blueprint 배포  
+   https://dashboard.render.com/blueprint/new?repo=https://github.com/ploky99-hub/fedex-mobile-sync
+2. **Apply** → 서비스 URL 확인 (예: `https://fedex-mobile-sync.onrender.com`)
+3. 각 앱 HTML의 `SYNC_SERVER`가 URL과 같으면 APK 재빌드 불필요. 다르면 수정 후 `./gradlew.bat assembleDebug`
+
+로컬에서 GitHub push + 안내: `deploy-to-render.ps1`
+
+## Render 배포 (수동)
 
 1. GitHub에 이 폴더를 push
 2. [Render](https://render.com) → New → Web Service → 저장소 연결

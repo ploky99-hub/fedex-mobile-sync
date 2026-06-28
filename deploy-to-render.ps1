@@ -34,10 +34,12 @@ if ($LASTEXITCODE -ne 0) {
 
 Write-Host ""
 Write-Host "=== Render 배포 (대시보드) ===" -ForegroundColor Green
-Write-Host "1. https://dashboard.render.com/blueprints"
-Write-Host "2. New Blueprint Instance"
-Write-Host "3. 저장소 $owner/$repo 선택"
-Write-Host "4. Deploy 클릭"
+Write-Host "Render 계정: gangnamspare@gmail.com (GitHub ploky99-hub 와 별개)"
+Write-Host ""
+Write-Host "1. gangnamspare@gmail.com 으로 https://dashboard.render.com 로그인"
+Write-Host "2. https://dashboard.render.com/blueprint/new?repo=https://github.com/ploky99-hub/fedex-mobile-sync"
+Write-Host "3. GitHub 연결 후 저장소 $owner/$repo 선택 (public)"
+Write-Host "4. 서비스 이름 fedex-mobile-sync 유지 후 Deploy"
 Write-Host ""
 Write-Host "배포 URL 확인 후 (예: https://fedex-mobile-sync.onrender.com)"
 Write-Host "각 앱 HTML의 SYNC_SERVER 값을 바꾸고 APK를 다시 빌드하세요."

@@ -28,12 +28,13 @@ if errorlevel 1 (
 
 echo.
 echo === Render 연결 ===
-echo 1. https://dashboard.render.com/blueprints 접속
-echo 2. New Blueprint Instance
-echo 3. 저장소 ploky99-hub/%REPO% 선택
-echo 4. render.yaml 적용 후 Deploy
+echo Render 계정: gangnamspare@gmail.com
+echo GitHub 저장소: ploky99-hub/%REPO% ^(public^)
 echo.
-echo 또는: https://dashboard.render.com/select-repo?type=web
+echo 1. gangnamspare@gmail.com 으로 https://dashboard.render.com 로그인
+echo 2. https://dashboard.render.com/blueprint/new?repo=https://github.com/ploky99-hub/%REPO%
+echo 3. GitHub 연결 후 Blueprint Apply / Deploy
+echo 4. 서비스 이름 fedex-mobile-sync 유지
 echo.
 echo 배포 URL 확인 후 각 앱 HTML의 SYNC_SERVER 값을 업데이트하고 APK를 다시 빌드하세요.
 echo.

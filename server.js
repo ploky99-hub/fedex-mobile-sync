@@ -79,6 +79,20 @@ const upload = multer({
 
 const app = express();
 
+// Render 무료: 슬립 해제용 초경량 헬스체크 (가장 먼저 등록)
+app.get('/api/health', (_req, res) => {
+  res.setHeader('Cache-Control', 'no-store');
+  res.json({ ok: true, apps: Object.keys(APPS), uptime: process.uptime() });
+});
+app.head('/api/health', (_req, res) => {
+  res.setHeader('Cache-Control', 'no-store');
+  res.sendStatus(200);
+});
+app.get('/api/ping', (_req, res) => {
+  res.setHeader('Cache-Control', 'no-store');
+  res.type('text/plain').send('pong');
+});
+
 app.use((req, res, next) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
@@ -90,8 +104,8 @@ app.use((req, res, next) => {
 app.use(express.json({ limit: '25mb' }));
 app.use(express.static(path.join(ROOT, 'public')));
 
-app.get('/api/health', (_req, res) => {
-  res.json({ ok: true, apps: Object.keys(APPS) });
+app.get('/', (_req, res) => {
+  res.sendFile(path.join(ROOT, 'public', 'index.html'));
 });
 
 app.get('/api/status', (_req, res) => {
@@ -167,6 +181,6 @@ app.post('/api/:app/upload-json', express.raw({ type: '*/*', limit: '25mb' }), (
   res.json({ ok: true, app: appKey, name: filename, size: body.length });
 });
 
-app.listen(PORT, () => {
-  console.log(`FedEx Mobile Sync listening on port ${PORT}`);
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`FedEx Mobile Sync listening on 0.0.0.0:${PORT}`);
 });

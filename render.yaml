@@ -3,6 +3,7 @@ services:
     name: fedex-mobile-sync
     runtime: node
     plan: free
+    healthCheckPath: /api/health
     buildCommand: npm install
     startCommand: npm start
     envVars:

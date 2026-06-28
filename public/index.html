@@ -60,14 +60,15 @@
     .files { margin-top: 10px; font-size: .82rem; }
     .files li { margin: 4px 0; }
     .files a { color: var(--purple); }
-    .notice {
-      background: #fff7ed;
-      border: 1px solid #fed7aa;
+    .notice-wake {
+      background: #eff6ff;
+      border: 1px solid #93c5fd;
       border-radius: 10px;
       padding: 12px;
       font-size: .85rem;
       margin-bottom: 14px;
     }
+    .notice-wake.warn { background: #fef2f2; border-color: #fca5a5; }
     code { background: #eef2ff; padding: 2px 6px; border-radius: 4px; font-size: .82rem; }
   </style>
 </head>
@@ -77,8 +78,13 @@
     <p>CRM · SRO · Tim's Tips 앱용 JSON / 엑셀 파일 공유</p>
   </header>
   <main>
+    <div class="notice-wake" id="wakeNotice">
+      <strong>Render 무료 cold start:</strong> 15분 미사용 시 서버가 잠듭니다.
+      첫 접속은 30~60초 걸릴 수 있고, 그동안 <code>Not Found</code>가 보일 수 있습니다.
+      이 페이지는 자동으로 다시 연결을 시도합니다.
+    </div>
     <div class="notice">
-      <strong>Render 무료 안내:</strong> 서버가 재시작되면 업로드 파일이 사라질 수 있습니다.
+      <strong>파일 보관:</strong> 서버가 재시작되면 업로드 파일이 사라질 수 있습니다.
       중요한 백업은 PC에도 따로 보관하세요.
     </div>
 
@@ -127,12 +133,49 @@
 
   <script>
     const APPS = ['crm', 'sro', 'timstips'];
+    const RETRY_DELAYS = [0, 3000, 5000, 8000, 12000];
 
     document.getElementById('baseUrl').textContent = location.origin;
 
+    function sleep(ms) {
+      return new Promise((resolve) => setTimeout(resolve, ms));
+    }
+
+    async function fetchWithRetry(url, options) {
+      let lastError = null;
+      for (let i = 0; i < RETRY_DELAYS.length; i++) {
+        if (RETRY_DELAYS[i] > 0) await sleep(RETRY_DELAYS[i]);
+        const notice = document.getElementById('wakeNotice');
+        if (notice && i > 0) {
+          notice.classList.add('warn');
+          notice.innerHTML = '<strong>서버 깨우는 중…</strong> (' + (i + 1) + '/' + RETRY_DELAYS.length + ') 잠시만 기다려 주세요.';
+        }
+        try {
+          const res = await fetch(url, options);
+          const text = await res.text();
+          if (!res.ok && (res.status === 404 && text.trim() === 'Not Found')) {
+            lastError = new Error('Not Found');
+            continue;
+          }
+          if (!res.ok && res.status >= 500) {
+            lastError = new Error('HTTP ' + res.status);
+            continue;
+          }
+          if (notice) {
+            notice.classList.remove('warn');
+            notice.innerHTML = '<strong>연결됨.</strong> 서버가 준비되었습니다.';
+          }
+          return { res, text };
+        } catch (err) {
+          lastError = err;
+        }
+      }
+      throw lastError || new Error('서버 연결 실패');
+    }
+
     async function refreshStatus() {
-      const res = await fetch('/api/status');
-      const data = await res.json();
+      const { res, text } = await fetchWithRetry('/api/status');
+      const data = JSON.parse(text);
       APPS.forEach((app) => {
         const info = data[app];
         const box = document.getElementById('status-' + app);
@@ -167,8 +210,8 @@
       }
       const fd = new FormData();
       fd.append('file', file);
-      const res = await fetch('/api/' + app + '/upload', { method: 'POST', body: fd });
-      const data = await res.json();
+      const { res, text } = await fetchWithRetry('/api/' + app + '/upload', { method: 'POST', body: fd });
+      const data = JSON.parse(text);
       if (!res.ok) {
         alert(data.error || '업로드 실패');
         return;
@@ -182,7 +225,11 @@
       btn.addEventListener('click', () => uploadApp(btn.dataset.app));
     });
 
-    refreshStatus();
+    refreshStatus().catch(function () {
+      document.getElementById('wakeNotice').classList.add('warn');
+      document.getElementById('wakeNotice').innerHTML =
+        '<strong>아직 연결되지 않았습니다.</strong> 30초 후 새로고침(F5)하거나 잠시 후 다시 접속해 주세요.';
+    });
   </script>
 </body>
 </html>

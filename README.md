@@ -2,6 +2,15 @@
 
 FedEx CRM, FedEx SRO, Tim's Tips Android 앱과 JSON/엑셀 파일을 주고받는 Render용 서버입니다.
 
+## 계정 구분
+
+| 용도 | 계정 |
+|------|------|
+| **GitHub** (코드 저장) | `ploky99-hub` |
+| **Render** (서버 호스팅) | `gangnamspare@gmail.com` |
+
+GitHub와 Render는 **서로 다른 계정**이어도 됩니다. 저장소가 public이면 Render에서 Blueprint로 바로 배포할 수 있습니다.
+
 ## 로컬 실행
 
 ```bash
@@ -16,18 +25,22 @@ npm start
 
 코드는 GitHub에 올려 두었습니다: https://github.com/ploky99-hub/fedex-mobile-sync
 
-1. 아래 링크로 Render 로그인 후 Blueprint 배포  
+1. **`gangnamspare@gmail.com`으로 Render 로그인** (Google 로그인 가능)
+2. 아래 링크로 Blueprint 배포  
    https://dashboard.render.com/blueprint/new?repo=https://github.com/ploky99-hub/fedex-mobile-sync
-2. **Apply** → 서비스 URL 확인 (예: `https://fedex-mobile-sync.onrender.com`)
-3. 각 앱 HTML의 `SYNC_SERVER`가 URL과 같으면 APK 재빌드 불필요. 다르면 수정 후 `./gradlew.bat assembleDebug`
+3. GitHub 연결 시 `ploky99-hub/fedex-mobile-sync` public 저장소 접근 허용
+4. **Apply** → 서비스 이름 `fedex-mobile-sync` 유지 → URL 확인  
+   (예: `https://fedex-mobile-sync.onrender.com`)
+5. URL이 앱의 `SYNC_SERVER`와 같으면 APK 재빌드 불필요. 다르면 HTML 수정 후 `./gradlew.bat assembleDebug`
 
 로컬에서 GitHub push + 안내: `deploy-to-render.ps1`
 
 ## Render 배포 (수동)
 
-1. GitHub에 이 폴더를 push
-2. [Render](https://render.com) → New → Web Service → 저장소 연결
-3. Runtime: Node, Build: `npm install`, Start: `npm start`
+1. **`gangnamspare@gmail.com`으로** [Render](https://render.com) 로그인
+2. GitHub 연결 후 저장소 `ploky99-hub/fedex-mobile-sync` 선택
+3. Runtime: Node, Build: `npm install`, Start: `npm start`  
+   (또는 `render.yaml` Blueprint 사용)
 4. 배포 후 URL 예: `https://fedex-mobile-sync.onrender.com`
 
 ## 앱 설정
@@ -48,6 +61,17 @@ npm start
 | GET | `/api/timstips/latest` | Tim's Tips 최신 JSON |
 | POST | `/api/:app/upload` | multipart `file` 업로드 |
 | POST | `/api/:app/upload-json` | raw JSON body 업로드 (CRM, timstips) |
+
+## Render 무료 cold start (Not Found)
+
+Render **무료** Web Service는 **약 15분** 동안 요청이 없으면 **슬립(종료)** 합니다.
+
+- 첫 접속 시 서버를 **깨우는 데 30~60초** 걸릴 수 있음
+- 깨우는 중 Render 앞단에서 **`Not Found`** 가 잠깐 보일 수 있음 (앱/서버 버그 아님)
+- 서버·앱·관리 페이지에 **자동 재시도**를 넣어 두었음
+
+**덜 끊기게 하려면:** [cron-job.org](https://cron-job.org) 등에서 10~14분마다  
+`https://fedex-mobile-sync.onrender.com/api/health` 를 GET 호출 (무료 ping)
 
 ## 주의
 

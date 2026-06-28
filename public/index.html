@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>FedEx Mobile Sync</title>
+  <style>
+    :root {
+      --purple: #4D148C;
+      --orange: #FF6200;
+      --bg: #f3f4f6;
+      --card: #fff;
+      --muted: #6b7280;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, sans-serif;
+      background: var(--bg);
+      color: #111827;
+      line-height: 1.5;
+    }
+    header {
+      background: linear-gradient(135deg, var(--purple), #7c3aed);
+      color: #fff;
+      padding: 20px 16px;
+    }
+    header h1 { margin: 0 0 6px; font-size: 1.25rem; }
+    header p { margin: 0; opacity: .9; font-size: .9rem; }
+    main { max-width: 720px; margin: 0 auto; padding: 16px; }
+    .card {
+      background: var(--card);
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 14px;
+      box-shadow: 0 1px 3px rgba(0,0,0,.08);
+    }
+    .card h2 { margin: 0 0 8px; font-size: 1rem; color: var(--purple); }
+    .hint { font-size: .82rem; color: var(--muted); margin: 0 0 12px; }
+    .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+    input[type=file] { font-size: .85rem; max-width: 100%; }
+    button, .btn {
+      background: var(--orange);
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      padding: 10px 14px;
+      font-weight: 600;
+      cursor: pointer;
+      font-size: .9rem;
+    }
+    button.secondary { background: var(--purple); }
+    .status-box {
+      margin-top: 10px;
+      padding: 10px;
+      background: #faf5ff;
+      border-radius: 8px;
+      font-size: .85rem;
+    }
+    .files { margin-top: 10px; font-size: .82rem; }
+    .files li { margin: 4px 0; }
+    .files a { color: var(--purple); }
+    .notice {
+      background: #fff7ed;
+      border: 1px solid #fed7aa;
+      border-radius: 10px;
+      padding: 12px;
+      font-size: .85rem;
+      margin-bottom: 14px;
+    }
+    code { background: #eef2ff; padding: 2px 6px; border-radius: 4px; font-size: .82rem; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>FedEx Mobile Sync</h1>
+    <p>CRM · SRO · Tim's Tips 앱용 JSON / 엑셀 파일 공유</p>
+  </header>
+  <main>
+    <div class="notice">
+      <strong>Render 무료 안내:</strong> 서버가 재시작되면 업로드 파일이 사라질 수 있습니다.
+      중요한 백업은 PC에도 따로 보관하세요.
+    </div>
+
+    <div class="card" id="card-crm">
+      <h2>FedEx CRM</h2>
+      <p class="hint"><code>.json</code> 백업 업로드 · 앱에서 「서버에서 내려받기」</p>
+      <div class="row">
+        <input type="file" id="file-crm" accept=".json,application/json">
+        <button type="button" data-app="crm">업로드</button>
+        <a class="btn secondary" href="/api/crm/latest" id="dl-crm" hidden>최신 다운로드</a>
+      </div>
+      <div class="status-box" id="status-crm">상태 확인 중…</div>
+      <ul class="files" id="files-crm"></ul>
+    </div>
+
+    <div class="card" id="card-sro">
+      <h2>FedEx SRO</h2>
+      <p class="hint"><code>.xlsx</code> 엑셀 업로드 · 앱에서 「서버에서 내려받기」</p>
+      <div class="row">
+        <input type="file" id="file-sro" accept=".xlsx,.xls,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel">
+        <button type="button" data-app="sro">업로드</button>
+        <a class="btn secondary" href="/api/sro/latest" id="dl-sro" hidden>최신 다운로드</a>
+      </div>
+      <div class="status-box" id="status-sro">상태 확인 중…</div>
+      <ul class="files" id="files-sro"></ul>
+    </div>
+
+    <div class="card" id="card-timstips">
+      <h2>Tim's Tips</h2>
+      <p class="hint"><code>.json</code> 백업 업로드 · 앱에서 「서버에서 내려받기 / 서버에 올리기」</p>
+      <div class="row">
+        <input type="file" id="file-timstips" accept=".json,application/json">
+        <button type="button" data-app="timstips">업로드</button>
+        <a class="btn secondary" href="/api/timstips/latest" id="dl-timstips" hidden>최신 다운로드</a>
+      </div>
+      <div class="status-box" id="status-timstips">상태 확인 중…</div>
+      <ul class="files" id="files-timstips"></ul>
+    </div>
+
+    <div class="card">
+      <h2>앱 설정</h2>
+      <p class="hint">각 앱 HTML의 <code>SYNC_SERVER</code> 값을 Render 배포 URL로 바꾸세요.</p>
+      <p class="hint">예: <code id="baseUrl">(현재 페이지 주소)</code></p>
+    </div>
+  </main>
+
+  <script>
+    const APPS = ['crm', 'sro', 'timstips'];
+
+    document.getElementById('baseUrl').textContent = location.origin;
+
+    async function refreshStatus() {
+      const res = await fetch('/api/status');
+      const data = await res.json();
+      APPS.forEach((app) => {
+        const info = data[app];
+        const box = document.getElementById('status-' + app);
+        const dl = document.getElementById('dl-' + app);
+        const list = document.getElementById('files-' + app);
+        if (!info.latest) {
+          box.textContent = '업로드된 파일 없음';
+          dl.hidden = true;
+          list.innerHTML = '';
+          return;
+        }
+        const kb = (info.latest.size / 1024).toFixed(1);
+        box.textContent = '최신: ' + info.latest.name + ' (' + kb + ' KB, ' + info.latest.updated_at.slice(0, 19).replace('T', ' ') + ')';
+        dl.hidden = false;
+        fetch('/api/' + app + '/files')
+          .then((r) => r.json())
+          .then((payload) => {
+            list.innerHTML = payload.files.slice(0, 5).map((f) =>
+              '<li><a href="/api/' + app + '/download/' + encodeURIComponent(f.name) + '">' +
+              f.name + '</a> (' + (f.size / 1024).toFixed(1) + ' KB)</li>'
+            ).join('');
+          });
+      });
+    }
+
+    async function uploadApp(app) {
+      const input = document.getElementById('file-' + app);
+      const file = input.files && input.files[0];
+      if (!file) {
+        alert('파일을 선택하세요.');
+        return;
+      }
+      const fd = new FormData();
+      fd.append('file', file);
+      const res = await fetch('/api/' + app + '/upload', { method: 'POST', body: fd });
+      const data = await res.json();
+      if (!res.ok) {
+        alert(data.error || '업로드 실패');
+        return;
+      }
+      input.value = '';
+      alert('업로드 완료: ' + data.name);
+      refreshStatus();
+    }
+
+    document.querySelectorAll('button[data-app]').forEach((btn) => {
+      btn.addEventListener('click', () => uploadApp(btn.dataset.app));
+    });
+
+    refreshStatus();
+  </script>
+</body>
+</html>

@@ -101,7 +101,15 @@ app.use((req, res, next) => {
   next();
 });
 
-app.use(express.json({ limit: '25mb' }));
+/** upload-json은 라우트에서 raw body로 받음 — 전역 json()이 먼저 파싱하면 body가 비어 empty body 발생 */
+function isUploadJsonRoute(req) {
+  return req.method === 'POST' && /^\/api\/[^/]+\/upload-json\/?$/.test(req.path);
+}
+
+app.use((req, res, next) => {
+  if (isUploadJsonRoute(req)) return next();
+  express.json({ limit: '25mb' })(req, res, next);
+});
 app.use(express.static(path.join(ROOT, 'public')));
 
 app.get('/', (_req, res) => {
@@ -191,13 +199,24 @@ app.post('/api/:app/upload', (req, res, next) => {
   });
 });
 
-app.post('/api/:app/upload-json', express.raw({ type: '*/*', limit: '25mb' }), (req, res) => {
+function rawBodyFromRequest(req) {
+  if (Buffer.isBuffer(req.body) && req.body.length) return req.body;
+  if (typeof req.body === 'string' && req.body.length) {
+    return Buffer.from(req.body, 'utf8');
+  }
+  if (req.body && typeof req.body === 'object' && !Buffer.isBuffer(req.body)) {
+    return Buffer.from(JSON.stringify(req.body), 'utf8');
+  }
+  return null;
+}
+
+app.post('/api/:app/upload-json', express.raw({ type: () => true, limit: '25mb' }), (req, res) => {
   const appKey = req.params.app;
   if (!APPS[appKey]) return res.status(404).json({ error: 'unknown app' });
   if (appKey === 'sro') {
     return res.status(400).json({ error: 'SRO는 JSON이 아닌 엑셀(.xlsx)을 multipart로 업로드하세요.' });
   }
-  const body = req.body;
+  const body = rawBodyFromRequest(req);
   if (!body || !body.length) return res.status(400).json({ error: 'empty body' });
   try {
     JSON.parse(body.toString('utf8'));

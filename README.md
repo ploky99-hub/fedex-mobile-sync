@@ -56,7 +56,8 @@ npm start
 | 메서드 | 경로 | 설명 |
 |--------|------|------|
 | GET | `/api/status` | 앱별 최신 파일 상태 |
-| GET | `/api/crm/latest` | CRM 최신 JSON |
+| GET | `/api/crm/latest` | CRM 최신 파일 다운로드 (attachment) |
+| GET | `/api/crm/latest-json` | CRM 최신 JSON (모바일 앱·PC CRM 복원용) |
 | GET | `/api/sro/latest` | SRO 최신 엑셀 |
 | GET | `/api/timstips/latest` | Tim's Tips 최신 JSON |
 | POST | `/api/:app/upload` | multipart `file` 업로드 |

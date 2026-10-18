@@ -136,6 +136,36 @@ app.get('/api/:app/latest', (req, res) => {
   res.download(full, latest.name);
 });
 
+/** JSON 앱·PC CRM용: 본문을 JSON으로 내려줌 (모바일 앱 httpGet, PC 백업 복원) */
+app.get('/api/:app/latest-json', (req, res) => {
+  const appKey = req.params.app;
+  if (!APPS[appKey]) return res.status(404).json({ error: 'unknown app' });
+  if (appKey === 'sro') {
+    return res.status(400).json({ error: 'SRO는 JSON이 아닙니다. /api/sro/latest 를 사용하세요.' });
+  }
+  const latest = latestFile(appKey);
+  if (!latest) return res.status(404).json({ error: 'no file uploaded yet' });
+  const full = path.join(UPLOADS, appKey, latest.name);
+  let content;
+  try {
+    content = fs.readFileSync(full, 'utf8');
+    JSON.parse(content);
+  } catch {
+    return res.status(500).json({ error: 'stored file is not valid JSON' });
+  }
+  const ts = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+  const downloadName =
+    appKey === 'crm'
+      ? `FedEx_CRM_backup_${ts}.json`
+      : appKey === 'timstips'
+        ? `Tims_Tips_backup_${ts}.json`
+        : latest.name;
+  res.setHeader('Content-Type', 'application/json; charset=utf-8');
+  res.setHeader('Content-Disposition', `attachment; filename="${downloadName}"`);
+  res.setHeader('Cache-Control', 'no-store');
+  res.send(content);
+});
+
 app.get('/api/:app/download/:filename', (req, res) => {
   const appKey = req.params.app;
   if (!APPS[appKey]) return res.status(404).json({ error: 'unknown app' });

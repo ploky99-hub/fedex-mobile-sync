@@ -90,12 +90,15 @@
 
     <div class="card" id="card-crm">
       <h2>FedEx CRM</h2>
-      <p class="hint"><code>.json</code> 백업 업로드 · 앱에서 「서버에서 내려받기」</p>
+      <p class="hint">휴대폰 앱 「서버에 올리기」 ↔ PC CRM 「서버에서 JSON 받기」</p>
       <div class="row">
         <input type="file" id="file-crm" accept=".json,application/json">
         <button type="button" data-app="crm">업로드</button>
-        <a class="btn secondary" href="/api/crm/latest" id="dl-crm" hidden>최신 다운로드</a>
+        <a class="btn secondary" href="/api/crm/latest-json" id="dl-crm" hidden>최신 JSON 다운로드 (PC용)</a>
       </div>
+      <p class="hint" id="dl-crm-hint" hidden style="margin-top:8px">
+        PC: 위 버튼으로 <code>FedEx_CRM_backup_*.json</code> 저장 후, CRM 프로그램 → 백업/복원 → JSON 복원
+      </p>
       <div class="status-box" id="status-crm">상태 확인 중…</div>
       <ul class="files" id="files-crm"></ul>
     </div>
@@ -180,16 +183,21 @@
         const info = data[app];
         const box = document.getElementById('status-' + app);
         const dl = document.getElementById('dl-' + app);
+        const dlHint = document.getElementById('dl-' + app + '-hint');
         const list = document.getElementById('files-' + app);
         if (!info.latest) {
           box.textContent = '업로드된 파일 없음';
           dl.hidden = true;
+          if (dlHint) dlHint.hidden = true;
           list.innerHTML = '';
           return;
         }
         const kb = (info.latest.size / 1024).toFixed(1);
         box.textContent = '최신: ' + info.latest.name + ' (' + kb + ' KB, ' + info.latest.updated_at.slice(0, 19).replace('T', ' ') + ')';
         dl.hidden = false;
+        if (dlHint) dlHint.hidden = false;
+        if (app === 'crm') dl.href = '/api/crm/latest-json';
+        if (app === 'timstips') dl.href = '/api/timstips/latest-json';
         fetch('/api/' + app + '/files')
           .then((r) => r.json())
           .then((payload) => {
